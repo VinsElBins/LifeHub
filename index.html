@@ -146,12 +146,19 @@ h1{margin:0;font:800 clamp(30px,8vw,44px)/1.02 var(--f-display);font-stretch:118
 .form{display:flex;flex-direction:column;gap:16px;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:18px}
 .form label,.form legend{font-weight:700;font-size:14px;display:block;margin-bottom:6px;padding:0}
 .form fieldset{border:0;margin:0;padding:0;min-width:0}
+.form textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);min-width:0;resize:vertical;min-height:72px}
 .form input,.form select,.field{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);min-width:0}
 .form .inline{display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:500}
 .form .inline input{width:84px}
 .form .chips{flex-wrap:wrap;overflow:visible}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .row.is-editing{background:var(--accent-soft)}
+.evt{width:30px;height:30px;border-radius:9px;border:1.5px solid var(--c2);display:grid;place-items:center;flex:none;color:var(--c2)}
+.evt svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.acts{display:flex;gap:12px}
+@media (max-width:480px){.acts{flex-direction:column;gap:0;align-items:flex-end}}
+.quick{display:flex;gap:8px}
+.quick input{flex:1;min-width:0;padding:12px;border-radius:12px;border:1px solid var(--line2);background:var(--surface)}
 .diag{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .diag b{font:500 12px var(--f-mono);margin-right:6px}
 .diag .ko b{color:var(--late)}
@@ -764,7 +771,7 @@ function finRec(){
     const when='le '+it.day+(step>1?' '+MONTHS[(it.month||1)-1].toLowerCase():'');
     return '<li class="row nochk'+(ui.fin.editId===it.id?' is-editing':'')+'"><div class="main"><span class="name">'+esc(it.name)+'</span><span class="meta"><span class="dot" style="background:'+c[1]+'"></span><span>'+esc(c[0])+' · '+esc(FREQ[it.freq][0].toLowerCase())+' · '+when+'</span></span></div>'+
       '<div class="side'+(sure?' confirming':'')+'"><span class="amt'+(it.kind==='in'?' pos':'')+'">'+money(it.amount)+'</span>'+(step>1?'<span class="when">≈ '+money(monthlyEq(it))+' / mois</span>':'')+
-      '<span style="display:flex;gap:12px"><button class="mini" data-act="fin.editItem" data-id="'+it.id+'" aria-label="Modifier '+esc(it.name)+'">Modifier</button>'+
+      '<span class="acts"><button class="mini" data-act="fin.editItem" data-id="'+it.id+'" aria-label="Modifier '+esc(it.name)+'">Modifier</button>'+
       '<button class="mini'+(sure?' sure':'')+'" data-act="fin.delItem" data-id="'+it.id+'">'+(sure?'Confirmer':'Supprimer')+'</button></span></div></li>';
   };
   const SORTS=[['day','Jour'],['name','Nom'],['amount','Montant'],['cat','Catégorie']];
@@ -1208,22 +1215,252 @@ function musSubmit(f,form){
   musStore.save();render();toast('Exercice créé');
 }
 
+
+/* =============================================================
+   Module AGENDA (tâches ponctuelles et rendez-vous)
+   ============================================================= */
+const AG_REP={none:['Ne se répète pas'],daily:['Chaque jour'],weekly:['Chaque semaine'],monthly:['Chaque mois'],yearly:['Chaque année']};
+const AG_PRIO={high:['Prioritaire'],normal:['Normale'],low:['Basse']};
+const CAL_ICON='<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>';
+function agSeed(){
+  const T=today(),sun=addDays(T,(7-parse(T).getDay())%7||7);
+  const mk=(kind,title,date,time,extra)=>Object.assign({id:uid('a'),kind,title,date,time:time||'',place:'',note:'',prio:'normal',repeat:'none',done:false,doneAt:null,ex:true},extra||{});
+  return {v:1,items:[
+    mk('task','Appeler la banque',T,'',{prio:'high'}),
+    mk('task','Acheter un cadeau d’anniversaire',addDays(T,6)),
+    mk('task','Bilan de la semaine',sun,'',{repeat:'weekly'}),
+    mk('task','Ranger les papiers du bureau','',''),
+    mk('event','Réunion de projet',addDays(T,2),'14:00',{place:'Salle B12'}),
+    mk('event','Déjeuner avec un ami',addDays(T,4),'12:30',{place:'Centre-ville'})
+  ]};
+}
+function agNorm(d){
+  try{
+    d=JSON.parse(JSON.stringify(d));
+    if(!d||!Array.isArray(d.items))return null;
+    d.v=1;
+    d.items.forEach(i=>{if(!i.repeat)i.repeat='none';if(!i.prio)i.prio='normal';if(i.date&&!i.dom)i.dom=parse(i.date).getDate();});
+    return d;
+  }catch(e){return null;}
+}
+const agStore=makeStore('ag','lifehub.ag.v1','agenda/state',agSeed,agNorm,s=>{
+  const cut=addDays(today(),-60);
+  s.items=s.items.filter(i=>!(i.kind==='task'&&i.done&&i.doneAt&&i.doneAt<cut&&(!i.repeat||i.repeat==='none')));
+});
+const AS=()=>agStore.state;
+const agById=id=>AS().items.find(i=>i.id===id)||null;
+function addMonthsClamp(date,n,dom){
+  const p=date.split('-').map(Number),d=new Date(p[0],p[1]-1+n,1);
+  const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  return ymd(new Date(d.getFullYear(),d.getMonth(),Math.min(dom||p[2],last)));
+}
+function agStep(date,rep,dom){
+  if(rep==='daily')return addDays(date,1);
+  if(rep==='weekly')return addDays(date,7);
+  if(rep==='monthly')return addMonthsClamp(date,1,dom);
+  if(rep==='yearly')return addMonthsClamp(date,12,dom);
+  return date;
+}
+function agNext(it,from){
+  if(!it.date)return null;
+  if(!it.repeat||it.repeat==='none')return it.date;
+  let d=it.date,g=0;
+  while(d<from&&g++<4000)d=agStep(d,it.repeat,it.dom);
+  return d;
+}
+function agOccursOn(it,day){
+  if(!it.date)return false;
+  if(!it.repeat||it.repeat==='none'||it.kind==='task')return it.date===day;
+  if(day<it.date)return false;
+  if(it.repeat==='daily')return true;
+  if(it.repeat==='weekly')return diff(day,it.date)%7===0;
+  const a=parse(it.date),b=parse(day),last=new Date(b.getFullYear(),b.getMonth()+1,0).getDate(),dom=Math.min(it.dom||a.getDate(),last);
+  if(it.repeat==='monthly')return b.getDate()===dom;
+  if(it.repeat==='yearly')return b.getMonth()===a.getMonth()&&b.getDate()===dom;
+  return false;
+}
+function agDay(date,T){
+  const d=diff(date,T);
+  if(d===0)return 'Aujourd’hui';
+  if(d===1)return 'Demain';
+  if(d===-1)return 'Hier';
+  return cap(wd(date))+' '+shortDate(date);
+}
+const agHasEx=()=>AS().items.some(i=>i.ex);
+function agBanner(){
+  if(!agHasEx())return '';
+  return '<div class="note"><span>Éléments d’exemple affichés. Remplace-les par les tiens.</span><button class="btn sm" data-act="ag.clearEx">Effacer les exemples</button></div>';
+}
+function agRow(it,date,T){
+  const isTask=it.kind==='task',late=isTask&&!it.done&&date&&date<T,sure=ui.ag.confirmDel===it.id;
+  const lead=isTask?'<button class="check" data-act="ag.toggle" data-id="'+it.id+'" aria-pressed="'+!!it.done+'" aria-label="'+(it.done?'Rouvrir : ':'Terminer : ')+esc(it.title)+'">'+CHECK+'</button>':'<span class="evt" aria-hidden="true">'+CAL_ICON+'</span>';
+  const bits=[];
+  if(date)bits.push(esc(agDay(date,T)));
+  if(it.time)bits.push(esc(it.time));
+  if(it.place)bits.push(esc(it.place));
+  if(it.repeat&&it.repeat!=='none')bits.push(esc(AG_REP[it.repeat][0].toLowerCase()));
+  if(it.prio==='high')bits.push('<span style="color:var(--late);font-weight:600">prioritaire</span>');
+  if(late)bits.push('<span class="late">en retard de '+(T>date?diff(T,date):0)+' j</span>');
+  return '<li class="row'+(it.done?' is-done':'')+'">'+lead+
+    '<div class="main"><span class="name">'+esc(it.title)+'</span><span class="meta">'+(isTask?'Tâche':'Rendez-vous')+(bits.length?' · '+bits.join(' · '):'')+'</span>'+(it.note?'<span class="meta" style="font-style:italic">'+esc(it.note)+'</span>':'')+'</div>'+
+    '<div class="side'+(sure?' confirming':'')+'"><span class="acts"><button class="mini" data-act="ag.edit" data-id="'+it.id+'" aria-label="Modifier '+esc(it.title)+'">Modifier</button>'+
+    '<button class="mini'+(sure?' sure':'')+'" data-act="ag.del" data-id="'+it.id+'">'+(sure?'Confirmer':'Supprimer')+'</button></span></div></li>';
+}
+function agEntries(T){
+  const out=[];
+  AS().items.forEach(it=>{
+    if(it.kind==='task'){if(it.done)return;out.push({it,date:it.date||''});}
+    else{const d=agNext(it,T);if(d&&d>=T)out.push({it,date:d});}
+  });
+  const pr=e=>['high','normal','low'].indexOf(e.it.prio||'normal');
+  const tm=e=>e.it.time||(e.it.kind==='event'?'00:00':'24:00');
+  return out.sort((a,b)=>{
+    const ka=a.date||'9999',kb=b.date||'9999';
+    return ka<kb?-1:ka>kb?1:tm(a)<tm(b)?-1:tm(a)>tm(b)?1:pr(a)-pr(b)||a.it.title.localeCompare(b.it.title,'fr');
+  });
+}
+function agSummary(T){
+  const items=AS().items;
+  const pend=items.filter(i=>i.kind==='task'&&!i.done&&i.date&&i.date<=T);
+  const doneN=items.filter(i=>i.kind==='task'&&(i.doneAt===T||i.lastDone===T)).length;
+  const evs=items.filter(i=>i.kind==='event'&&agOccursOn(i,T));
+  const late=pend.filter(i=>i.date<T).length;
+  const total=doneN+pend.length,C=2*Math.PI*26,pct=total?Math.min(1,doneN/total):0;
+  const parts=[];
+  if(pend.length)parts.push(pend.length+' tâche'+(pend.length>1?'s':'')+' à faire');
+  if(evs.length)parts.push(evs.length+' rendez-vous');
+  const msg=parts.length?parts.join(' et ')+' aujourd’hui.':(doneN?'Tout est fait pour aujourd’hui.':'Rien de prévu aujourd’hui.');
+  const nowHM=pad(new Date().getHours())+':'+pad(new Date().getMinutes());
+  const nextEv=evs.filter(i=>i.time&&i.time>=nowHM).sort((a,b)=>a.time<b.time?-1:1)[0];
+  const sub=nextEv?'Prochain rendez-vous à '+esc(nextEv.time)+' : '+esc(nextEv.title)+'.':late?late+' en retard.':'';
+  return '<section class="sum" aria-label="Bilan du jour"><div class="ring"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><circle class="trk" cx="32" cy="32" r="26" stroke-width="7"/><circle class="val" cx="32" cy="32" r="26" stroke-width="7" stroke-dasharray="'+(C*pct).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 32 32)"/></svg><b>'+doneN+'/'+total+'</b></div>'+
+    '<div class="sumtxt"><strong>'+msg+'</strong>'+(sub?'<span>'+sub+'</span>':'')+'</div></section>';
+}
+function agSoon(){
+  const T=today(),U=ui.ag;
+  let out=agBanner()+agSummary(T);
+  out+='<form class="quick" data-form="ag.quick" novalidate><input id="aq" name="title" maxlength="100" autocomplete="off" placeholder="Nouvelle tâche rapide" aria-label="Nouvelle tâche rapide"><button class="btn" type="submit">Ajouter</button></form>';
+  out+='<div class="chips" role="group" aria-label="Filtrer">'+[['all','Tout'],['task','Tâches'],['event','Rendez-vous']].map(x=>'<button class="chip" data-act="ag.filter" data-v="'+x[0]+'" aria-pressed="'+(U.filter===x[0])+'">'+x[1]+'</button>').join('')+'</div>';
+  const list=agEntries(T).filter(e=>U.filter==='all'||e.it.kind===U.filter);
+  const grp=e=>!e.date?'Sans date':(e.it.kind==='task'&&e.date<T)?'En retard':e.date===T?'Aujourd’hui':diff(e.date,T)===1?'Demain':diff(e.date,T)<=7?'Cette semaine':'Plus tard';
+  const order=['En retard','Aujourd’hui','Demain','Cette semaine','Plus tard','Sans date'];
+  let html='';
+  order.forEach(g=>{
+    const l=list.filter(e=>grp(e)===g);
+    if(l.length)html+='<section class="sec"><h3>'+g+' <em>'+l.length+'</em></h3><ul class="list">'+l.map(e=>agRow(e.it,e.date,T)).join('')+'</ul></section>';
+  });
+  out+=html||'<div class="empty">Rien à venir. Ajoute une tâche ou un rendez-vous.</div>';
+  const done=AS().items.filter(i=>i.kind==='task'&&i.done&&i.doneAt&&diff(T,i.doneAt)<=14).sort((a,b)=>a.doneAt<b.doneAt?1:-1);
+  if(done.length){
+    out+='<button class="btn sm" style="align-self:flex-start;background:transparent;color:var(--ink);border:1px solid var(--line2)" data-act="ag.showDone">'+(U.showDone?'Masquer':'Voir')+' les tâches terminées ('+done.length+')</button>';
+    if(U.showDone)out+='<section class="sec"><h3>Terminées récemment <em>'+done.length+'</em></h3><ul class="list">'+done.map(i=>agRow(i,i.date,T)).join('')+'</ul></section>';
+  }
+  return out;
+}
+function agCal(){
+  const T=today(),U=ui.ag,ym=U.month,items=AS().items;
+  const on=day=>items.filter(i=>agOccursOn(i,day));
+  let out=agBanner()+mnav(ym,'ag.month');
+  out+=calGrid(ym,(date,d)=>{
+    const os=on(date);
+    return '<button class="cell'+(date===T?' today':'')+(U.selDay===date?' sel':'')+'" data-act="ag.day" data-d="'+date+'" aria-label="'+esc(cap(fLong.format(parse(date))))+(os.length?', '+os.length+' élément'+(os.length>1?'s':''):'')+'"><span>'+d+'</span><span class="dots">'+os.slice(0,3).map(i=>'<i style="background:'+(i.kind==='event'?'var(--c2)':i.prio==='high'?'var(--late)':'var(--c1)')+'"></i>').join('')+'</span></button>';
+  });
+  out+='<p class="hint">Bleu : rendez-vous. Orange : tâche. Rouge : tâche prioritaire.</p>';
+  const sel=U.selDay&&ymOf(U.selDay)===ym?U.selDay:null;
+  if(sel){
+    const os=on(sel).sort((a,b)=>(a.time||'')<(b.time||'')?-1:1);
+    out+='<section class="sec"><h2>'+esc(cap(fLong.format(parse(sel))))+'</h2>'+(os.length?'<ul class="list">'+os.map(i=>agRow(i,sel,T)).join('')+'</ul>':'<div class="empty">Rien de prévu ce jour-là.</div>')+
+      '<button class="btn sm" style="align-self:flex-start" data-act="ag.addOn" data-d="'+sel+'">Ajouter ce jour-là</button></section>';
+  }
+  return out;
+}
+function agForm(){
+  const ed=ui.ag.editId?agById(ui.ag.editId):null;
+  const v=ed||{kind:'task',title:'',date:ui.ag.prefill||'',time:'',place:'',note:'',prio:'normal',repeat:'none'};
+  return '<form class="form" id="a-form" data-form="ag.item" novalidate><div class="eyebrow">'+(ed?'Modifier cet élément':'Nouvel élément')+'</div><input type="hidden" name="id" value="'+(ed?esc(ed.id):'')+'">'+
+    '<div class="row2"><div><label for="a-kind">Type</label><select id="a-kind" name="kind"><option value="task"'+(v.kind==='task'?' selected':'')+'>Tâche</option><option value="event"'+(v.kind==='event'?' selected':'')+'>Rendez-vous</option></select></div>'+
+    '<div><label for="a-prio">Priorité</label><select id="a-prio" name="prio">'+opts(AG_PRIO,v.prio)+'</select></div></div>'+
+    '<div><label for="a-title">Titre</label><input id="a-title" name="title" maxlength="100" autocomplete="off" value="'+esc(v.title)+'" placeholder="Ex. Rendez-vous chez le coiffeur"></div>'+
+    '<div class="row2"><div><label for="a-date">Date (obligatoire pour un rendez-vous)</label><input id="a-date" name="date" type="date" value="'+esc(v.date||'')+'"></div>'+
+    '<div><label for="a-time">Heure (facultatif)</label><input id="a-time" name="time" type="time" value="'+esc(v.time||'')+'"></div></div>'+
+    '<div><label for="a-place">Lieu (facultatif)</label><input id="a-place" name="place" maxlength="80" autocomplete="off" value="'+esc(v.place||'')+'"></div>'+
+    '<div><label for="a-rep">Répétition (nécessite une date)</label><select id="a-rep" name="repeat">'+opts(AG_REP,v.repeat||'none')+'</select></div>'+
+    '<div><label for="a-note">Note (facultatif)</label><textarea id="a-note" name="note" maxlength="300">'+esc(v.note||'')+'</textarea></div>'+
+    '<p class="err" role="alert"></p><button class="btn" type="submit">'+(ed?'Enregistrer les modifications':'Ajouter')+'</button>'+
+    (ed?'<button type="button" class="btn alt" style="color:var(--ink)" data-act="ag.cancel">Annuler</button>':'')+'</form>';
+}
+function agRender(){
+  const U=ui.ag,tabs=[['soon','À venir'],['cal','Calendrier'],['add',U.editId?'Modifier':'Ajouter']];
+  return '<header class="head"><div class="eyebrow">Life Hub · Agenda</div><h1>Agenda</h1></header>'+subTabs('ag',tabs,U.tab)+
+    (U.tab==='soon'?agSoon():U.tab==='cal'?agCal():agForm());
+}
+function agAct(a,b){
+  const U=ui.ag,S=AS(),id=b.dataset.id,T=today();
+  if(a!=='del'&&U.confirmDel)U.confirmDel=null;
+  if(a==='tab'){U.tab=b.dataset.tab;if(U.tab==='add'){U.editId=null;U.prefill='';}render();}
+  else if(a==='filter'){U.filter=b.dataset.v;render();}
+  else if(a==='showDone'){U.showDone=!U.showDone;render();}
+  else if(a==='month'){U.month=addMonths(U.month,parseInt(b.dataset.d,10));U.selDay=null;render();}
+  else if(a==='day'){U.selDay=U.selDay===b.dataset.d?null:b.dataset.d;render();}
+  else if(a==='addOn'){U.tab='add';U.editId=null;U.prefill=b.dataset.d;render();window.scrollTo(0,0);}
+  else if(a==='edit'){U.editId=id;U.tab='add';render();window.scrollTo(0,0);}
+  else if(a==='cancel'){U.editId=null;U.prefill='';U.tab='soon';render();}
+  else if(a==='toggle'){
+    const it=agById(id);if(!it)return;
+    if(it.done){it.done=false;it.doneAt=null;toast('Tâche rouverte');}
+    else if(it.repeat&&it.repeat!=='none'&&it.date){
+      let d=agStep(it.date,it.repeat,it.dom),g=0;
+      while(d<=T&&g++<4000)d=agStep(d,it.repeat,it.dom);
+      it.date=d;it.lastDone=T;toast('Fait. Prochaine fois : '+agDay(d,T).toLowerCase());
+    }else{it.done=true;it.doneAt=T;toast('Tâche terminée');}
+    agStore.save();render();
+  }
+  else if(a==='del'){
+    if(U.confirmDel===id){S.items=S.items.filter(i=>i.id!==id);U.confirmDel=null;agStore.save();render();toast('Élément supprimé');}
+    else{U.confirmDel=id;render();}
+  }
+  else if(a==='clearEx'){S.items=S.items.filter(i=>!i.ex);agStore.save();render();toast('Exemples effacés');}
+}
+function agField(){}
+function agSubmit(f,form){
+  const e=form.elements,S=AS();
+  if(f==='quick'){
+    const title=e.title.value.trim();if(!title)return;
+    S.items.push({id:uid('a'),kind:'task',title,date:'',time:'',place:'',note:'',prio:'normal',repeat:'none',done:false,doneAt:null});
+    agStore.save();render();toast('Tâche ajoutée');return;
+  }
+  const err=form.querySelector('.err');
+  const title=e.title.value.trim(),date=e.date.value,kind=e.kind.value,rep=e.repeat.value;
+  if(!title){err.textContent='Donne un titre.';e.title.focus();return;}
+  if(kind==='event'&&!date){err.textContent='Un rendez-vous a besoin d’une date.';e.date.focus();return;}
+  if(rep!=='none'&&!date){err.textContent='Choisis une date pour répéter cet élément.';e.date.focus();return;}
+  const fields={kind,title,date,time:e.time.value,place:e.place.value.trim(),note:e.note.value.trim(),prio:e.prio.value,repeat:rep,dom:date?parse(date).getDate():0};
+  const cur=e.id.value?agById(e.id.value):null;
+  if(cur){Object.assign(cur,fields);delete cur.ex;}
+  else S.items.push(Object.assign({id:uid('a'),done:false,doneAt:null},fields));
+  ui.ag.editId=null;ui.ag.prefill='';ui.ag.tab=date&&ui.ag.tab==='cal'?'cal':'soon';
+  agStore.save();render();toast(cur?'Élément modifié':'Élément ajouté');
+}
+
 /* =============================================================
    Coque : modules, navigation, événements
    ============================================================= */
 const ICON={
+  ag:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 15l2.5 2.5L16 13"/>',
   pl:'<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
   fin:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
   mus:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>'
 };
 const MODS={
   pl:{key:'pl',hash:'planner',label:'Planner',store:plStore,render:plRender,act:plAct,submit:plSubmit,field:plField},
+  ag:{key:'ag',hash:'agenda',label:'Agenda',store:agStore,render:agRender,act:agAct,submit:agSubmit,field:agField},
   fin:{key:'fin',hash:'finances',label:'Finances',store:finStore,render:finRender,act:finAct,submit:finSubmit,field:finField},
   mus:{key:'mus',hash:'musculation',label:'Muscu',store:musStore,render:musRender,act:musAct,submit:musSubmit,field:musField}
 };
 const ui={
   mod:'pl',data:false,auth:{mode:'in',msg:''},confirmLogout:false,
   pl:{tab:'today',filter:'all',skip:0,timer:null,confirmDel:null},
+  ag:{tab:'soon',filter:'all',month:ymOf(today()),selDay:null,editId:null,prefill:'',confirmDel:null,showDone:false},
   fin:{tab:'budget',month:ymOf(today()),selDay:null,confirmDel:null,setup:false,editId:null,sort:'day',dir:1},
   mus:{tab:'seance',exSel:null,metric:'charge',month:ymOf(today()),confirmDel:null,manage:false,wp:'90'}
 };
