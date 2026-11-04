@@ -8,6 +8,16 @@
 <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
+<script>
+/* Apparence choisie dans les réglages (Automatique / Clair / Sombre), appliquée avant l'affichage pour éviter un flash. */
+window.applyTheme=function(t){
+  var r=document.documentElement,c={light:'#F2F2F7',dark:'#000000'};
+  if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else{r.removeAttribute('data-theme');t='';}
+  var m=document.querySelectorAll('meta[name="theme-color"]');
+  for(var i=0;i<m.length;i++){var dk=/dark/.test(m[i].media);m[i].content=t?c[t]:(dk?c.dark:c.light);}
+};
+try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +37,7 @@
    - rayons : contrôles 12, cartes et listes 14, fenêtres 16, pastilles 999 ;
    - cibles tactiles : 44 px minimum. */
 :root{
-  --bg:#F2F2F7; --card:#FFFFFF; --elev:#FFFFFF; --sheet:#F2F2F7;
+  --bg:#F2F2F7; --card:#FFFFFF; --elev:#FFFFFF; --sheet:#F2F2F7; --seg-on:#FFFFFF;
   --fill:rgba(118,118,128,.12); --fill2:rgba(118,118,128,.08); --press:rgba(60,60,67,.08);
   --label:#000000; --label2:#5E5E63; --label3:#737378;
   --sep:rgba(60,60,67,.2); --sep2:#C6C6C8;
@@ -42,7 +52,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#000000; --card:#1C1C1E; --elev:#2C2C2E; --sheet:#1C1C1E;
+    --bg:#000000; --card:#1C1C1E; --elev:#2C2C2E; --sheet:#1C1C1E; --seg-on:#636366;
     --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16); --press:rgba(255,255,255,.08);
     --label:#FFFFFF; --label2:#AEAEB2; --label3:#98989D;
     --sep:rgba(84,84,88,.65); --sep2:#38383A;
@@ -54,7 +64,7 @@
   }
 }
 :root[data-theme="dark"]{
-  --bg:#000000; --card:#1C1C1E; --elev:#2C2C2E; --sheet:#1C1C1E;
+  --bg:#000000; --card:#1C1C1E; --elev:#2C2C2E; --sheet:#1C1C1E; --seg-on:#636366;
   --fill:rgba(118,118,128,.24); --fill2:rgba(118,118,128,.16); --press:rgba(255,255,255,.08);
   --label:#FFFFFF; --label2:#AEAEB2; --label3:#98989D;
   --sep:rgba(84,84,88,.65); --sep2:#38383A;
@@ -107,7 +117,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stro
 .segw{position:sticky;top:var(--top-h);z-index:20;margin:-10px -16px -12px;padding:10px 16px 12px;background:linear-gradient(var(--bg) 78%,transparent)}
 .seg{display:flex;padding:3px;gap:2px;background:var(--fill);border-radius:12px}
 .seg button{flex:1;min-width:0;min-height:38px;border:0;border-radius:9px;background:transparent;font-size:.875rem;font-weight:500;color:var(--label);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background-color .15s}
-.seg button[aria-current="true"]{background:var(--elev);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)}
+.seg button[aria-current="true"]{background:var(--seg-on);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.04)}
 
 /* ---------- Barre d'onglets ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);box-shadow:0 -.5px 0 var(--sep);
@@ -2180,6 +2190,11 @@ document.addEventListener('click',e=>{
     else if(a==='export')exportData();
     else if(a==='mode'){ui.auth.mode=ui.auth.mode==='up'?'in':'up';ui.auth.msg='';render();}
     else if(a==='sync'){Cloud.sync(true);toast('Synchronisation lancée');}
+    else if(a==='theme'){
+      const t=b.dataset.v;
+      try{if(t==='auto')localStorage.removeItem('lifehub2.theme');else localStorage.setItem('lifehub2.theme',t);}catch(err){}
+      window.applyTheme(t);if(sheet)renderSheet(false);
+    }
     else if(a==='logout'){
       openAS('Se déconnecter ?','Les données de cet appareil seront effacées. Elles restent dans ton compte en ligne.',[{label:'Se déconnecter',danger:true,fn:()=>{closeSheet(true);Cloud.logout();render();}}]);
     }
@@ -2373,6 +2388,10 @@ SHEETS.settings=d=>{
       '<button class="lbtn" data-act="app.sync">Synchroniser maintenant</button><button class="lbtn danger" data-act="app.logout">Se déconnecter</button></div>'+
       '<p class="gf">Tes données sont enregistrées en ligne automatiquement. L’export ci-dessous est une copie de secours facultative.</p></section>';
   }
+  let th='auto';try{th=localStorage.getItem('lifehub2.theme')||'auto';}catch(e){}
+  b+='<section class="sec"><h3 class="gh">Apparence</h3><div class="seg" role="group" aria-label="Apparence">'+[['auto','Automatique'],['light','Clair'],['dark','Sombre']].map(x=>
+    '<button data-act="app.theme" data-v="'+x[0]+'" aria-current="'+(th===x[0])+'">'+x[1]+'</button>').join('')+'</div>'+
+    '<p class="gf">'+(th==='auto'?'Suit le thème clair ou sombre du téléphone.':'Choix enregistré sur cet appareil.')+'</p></section>';
   b+='<section class="sec"><h3 class="gh">Encart de l’accueil</h3><div class="fg">'+fr('nkey','Clé API Ninjas','<input id="nkey" type="password" autocomplete="off" spellcheck="false" autocapitalize="off" data-f="dash.key" value="'+esc(CS().ninjas||'')+'" placeholder="Colle ta clé ici">')+'</div>'+
     '<p class="gf">'+(CLOUD?'Enregistrée dans ton compte, jamais dans le code public.':'Enregistrée sur cet appareil seulement.')+'</p></section>';
   b+='<section class="sec"><h3 class="gh">Sauvegarde</h3><div class="fg"><button class="lbtn" data-act="app.export">Exporter une sauvegarde</button>'+

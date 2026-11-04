@@ -1,7 +1,7 @@
 /* Life Hub 2 : service worker de la nouvelle version (portée : dossier v2/ seulement).
    Change VERSION à chaque mise à jour des fichiers pour renouveler le cache. */
 const PREFIX='life-hub-2-';
-const VERSION=PREFIX+'v1';
+const VERSION=PREFIX+'v2';
 const CORE=['./','index.html','manifest.json','../config.js','icons/icon-32.png','icons/icon-192.png','icons/icon-512.png','icons/icon-512-maskable.png','icons/apple-touch-icon.png'];
 
 /* Installation : mise en cache des fichiers de base.
