@@ -43,6 +43,7 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
   --sep:rgba(60,60,67,.2); --sep2:#C6C6C8;
   --accent:#0B7A75; --accent-fg:#0B7A75; --accent-soft:rgba(11,122,117,.12); --on-accent:#FFFFFF;
   --red:#D70015; --red-fg:#D70015; --red-soft:rgba(215,0,21,.1); --green-fg:#1E7B34;
+  --s-base:rgba(255,255,255,.64); --s-a:.12; --s-b:.04;
   --au:.32; --g-base:rgba(255,255,255,.46); --g-a:.26; --g-b:.10; --g-border:rgba(255,255,255,.62); --g-hl:rgba(255,255,255,.8);
   --bar:rgba(249,249,249,.86); --scrim:rgba(0,0,0,.32); --hud:rgba(30,30,32,.94); --on-hud:#FFFFFF;
   --c1:#FF9500; --c2:#007AFF; --c3:#AF52DE; --c4:#34C759; --c5:#FF2D55; --c6:#8E8E93; --c7:#A2845E; --c8:#5856D6;
@@ -59,7 +60,8 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
     --sep:rgba(84,84,88,.65); --sep2:#38383A;
     --accent:#0B7A75; --accent-fg:#3FCBC1; --accent-soft:rgba(63,203,193,.16);
     --red-fg:#FF6961; --red-soft:rgba(255,105,97,.16); --green-fg:#30D158;
-    --au:.46; --g-base:rgba(28,28,30,.44); --g-a:.46; --g-b:.20; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
+    --s-base:rgba(28,28,30,.56); --s-a:.22; --s-b:.08;
+  --au:.46; --g-base:rgba(28,28,30,.44); --g-a:.46; --g-b:.20; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
   --bar:rgba(22,22,24,.86); --scrim:rgba(0,0,0,.5); --hud:rgba(58,58,60,.96);
     --c1:#FF9F0A; --c2:#0A84FF; --c3:#BF5AF2; --c4:#30D158; --c5:#FF375F; --c6:#98989D; --c7:#AC8E68; --c8:#5E5CE6;
     color-scheme:dark;
@@ -72,6 +74,7 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
   --sep:rgba(84,84,88,.65); --sep2:#38383A;
   --accent:#0B7A75; --accent-fg:#3FCBC1; --accent-soft:rgba(63,203,193,.16);
   --red-fg:#FF6961; --red-soft:rgba(255,105,97,.16); --green-fg:#30D158;
+  --s-base:rgba(28,28,30,.56); --s-a:.22; --s-b:.08;
   --au:.46; --g-base:rgba(28,28,30,.44); --g-a:.46; --g-b:.20; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
   --bar:rgba(22,22,24,.86); --scrim:rgba(0,0,0,.5); --hud:rgba(58,58,60,.96);
   --c1:#FF9F0A; --c2:#0A84FF; --c3:#BF5AF2; --c4:#30D158; --c5:#FF375F; --c6:#98989D; --c7:#AC8E68; --c8:#5E5CE6;
@@ -254,7 +257,7 @@ body.kb .tabbar{transform:translateY(110%)}
 .stepper button:active{opacity:.5}
 .stepper b{min-width:24px;text-align:center;font-size:1.0625rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--label)}
 
-/* Carte "prochaine corvée" */
+/* Carte "prochaine tâche" */
 .focus{background:var(--card);border-radius:14px;padding:18px 16px 16px;display:flex;flex-direction:column;gap:6px}
 .kicker{margin:0;font-size:.8125rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em;color:var(--accent-fg)}
 .ftitle{margin:0;font-size:1.5rem;font-weight:700;line-height:1.2;letter-spacing:-.022em;text-wrap:balance}
@@ -353,16 +356,42 @@ body.kb .tabbar{transform:translateY(110%)}
 /* Verre teinté : un fond coloré flou (« aurora ») derrière, des tuiles givrées teintées par module.
    --tc = couleur de la tuile en r,g,b ; --ga = couleur d'accent lisible sur la tuile. */
 .aurora{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .4s var(--ease);
-  background:radial-gradient(46vmax 36vmax at 6% 10%,rgba(11,122,117,var(--au)),transparent 70%),
-    radial-gradient(40vmax 32vmax at 98% 28%,rgba(196,55,45,var(--au)),transparent 70%),
-    radial-gradient(46vmax 36vmax at 2% 60%,rgba(29,95,209,var(--au)),transparent 70%),
-    radial-gradient(42vmax 34vmax at 98% 80%,rgba(184,66,14,var(--au)),transparent 70%),
-    radial-gradient(40vmax 30vmax at 50% 104%,rgba(94,74,227,var(--au)),transparent 70%)}
+  --b1:11,122,117;--b2:196,55,45;--b3:29,95,209;--b4:184,66,14;--b5:94,74,227;
+  background:radial-gradient(46vmax 36vmax at 6% 10%,rgba(var(--b1),var(--au)),transparent 70%),
+    radial-gradient(40vmax 32vmax at 98% 28%,rgba(var(--b2),var(--au)),transparent 70%),
+    radial-gradient(46vmax 36vmax at 2% 60%,rgba(var(--b3),var(--au)),transparent 70%),
+    radial-gradient(42vmax 34vmax at 98% 80%,rgba(var(--b4),var(--au)),transparent 70%),
+    radial-gradient(40vmax 30vmax at 50% 104%,rgba(var(--b5),var(--au)),transparent 70%)}
+body:not(.m-dash) .aurora{--b1:var(--tc);--b3:var(--tc);--b4:var(--tc);--b2:var(--tc2);--b5:var(--tc2)}
 body.glass .aurora{opacity:1}
 .wrap{position:relative;z-index:1}
 body.glass:not(.sc) .segw{background:none}
 body.glass.sc .segw{background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
-.t-pl{--tc:11,122,117}.t-ag{--tc:196,55,45}.t-fin{--tc:29,95,209}.t-mus{--tc:184,66,14}.t-fun{--tc:94,74,227}
+.m-dash,.m-pl,.t-pl{--tc:11,122,117;--tc2:29,95,209;--accent:#0B7A75;--accent-fg:#0B7A75;--accent-soft:rgba(11,122,117,.13);--acc-b:#5FE0D6}
+.m-ag,.t-ag{--tc:196,55,45;--tc2:184,66,14;--accent:#C4372D;--accent-fg:#C4372D;--accent-soft:rgba(196,55,45,.12);--acc-b:#FF9A90}
+.m-fin,.t-fin{--tc:29,95,209;--tc2:94,74,227;--accent:#1D5FD1;--accent-fg:#1D5FD1;--accent-soft:rgba(29,95,209,.12);--acc-b:#8DB8FF}
+.m-mus,.t-mus{--tc:184,66,14;--tc2:196,55,45;--accent:#B8420E;--accent-fg:#B8420E;--accent-soft:rgba(184,66,14,.12);--acc-b:#FFA470}
+.t-fun{--tc:94,74,227;--accent:#5E4AE3;--accent-fg:#5E4AE3;--accent-soft:rgba(94,74,227,.14);--acc-b:#B4A8FF}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .m-dash,:root:not([data-theme="light"]) .m-pl,:root:not([data-theme="light"]) .t-pl{--accent-fg:#3FCBC1;--accent-soft:rgba(63,203,193,.18)}
+  :root:not([data-theme="light"]) .m-ag,:root:not([data-theme="light"]) .t-ag{--accent-fg:#FF7A6E;--accent-soft:rgba(255,122,110,.18)}
+  :root:not([data-theme="light"]) .m-fin,:root:not([data-theme="light"]) .t-fin{--accent-fg:#6EA8FF;--accent-soft:rgba(110,168,255,.18)}
+  :root:not([data-theme="light"]) .m-mus,:root:not([data-theme="light"]) .t-mus{--accent-fg:#FF9A5C;--accent-soft:rgba(255,154,92,.18)}
+  :root:not([data-theme="light"]) .t-fun{--accent-fg:#A99BFF;--accent-soft:rgba(169,155,255,.2)}
+}
+:root[data-theme="dark"] .m-dash,:root[data-theme="dark"] .m-pl,:root[data-theme="dark"] .t-pl{--accent-fg:#3FCBC1;--accent-soft:rgba(63,203,193,.18)}
+:root[data-theme="dark"] .m-ag,:root[data-theme="dark"] .t-ag{--accent-fg:#FF7A6E;--accent-soft:rgba(255,122,110,.18)}
+:root[data-theme="dark"] .m-fin,:root[data-theme="dark"] .t-fin{--accent-fg:#6EA8FF;--accent-soft:rgba(110,168,255,.18)}
+:root[data-theme="dark"] .m-mus,:root[data-theme="dark"] .t-mus{--accent-fg:#FF9A5C;--accent-soft:rgba(255,154,92,.18)}
+:root[data-theme="dark"] .t-fun{--accent-fg:#A99BFF;--accent-soft:rgba(169,155,255,.2)}
+/* Verre généralisé : toutes les surfaces des écrans (pas les fenêtres) deviennent givrées, teintées par le module */
+#app :is(.card,.list,.fg,.hero,.tile,.focus,.days,.cal,.legend,.entry,.chart,.empty,.note):not(.glass-t){
+  background:linear-gradient(150deg,rgba(var(--tc),var(--s-a)),rgba(var(--tc),var(--s-b))),var(--s-base);
+  border:1px solid var(--g-border);-webkit-backdrop-filter:blur(24px) saturate(170%);backdrop-filter:blur(24px) saturate(170%);
+  box-shadow:inset 0 1px 0 var(--g-hl),0 6px 20px rgba(var(--tc),.10),0 1px 2px rgba(0,0,0,.05)}
+#app :is(.chip:not([aria-pressed="true"]):not(.on),.mnav button,.quick input,.addex select){
+  background-color:var(--s-base);border:1px solid var(--g-border);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%)}
+#app .fg .fr input,#app .fg .fr select{background-color:transparent}
 .t-in{--tc:30,123,52}.t-out{--tc:184,66,14}.t-abo{--tc:94,74,227}.t-bal{--tc:29,95,209}.t-neg{--tc:196,55,45}
 .glass-t{--ga:rgb(var(--tc));position:relative;color:var(--label);border:1px solid var(--g-border);border-radius:14px;
   background:linear-gradient(150deg,rgba(var(--tc),var(--g-a)),rgba(var(--tc),var(--g-b))),var(--g-base);
@@ -470,7 +499,7 @@ a.btn,a.lbtn{text-decoration:none}
 #toast:not(.act){padding-right:18px}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.show.act{pointer-events:auto}
-#toast button{min-height:40px;border:0;border-radius:999px;background:rgba(255,255,255,.14);color:#7FE3DB;font-weight:600;padding:0 14px}
+#toast button{min-height:40px;border:0;border-radius:999px;background:rgba(255,255,255,.14);color:var(--acc-b,#7FE3DB);font-weight:600;padding:0 14px}
 body.kb #toast{bottom:16px}
 
 @media (hover:hover){
@@ -1048,10 +1077,10 @@ function plFocus(T,list){
   if(!t&&!list.length&&PS().tasks.length){if(U.timer)plTimer(null);return '';}
   if(!t&&list.length)t=list[U.skip%list.length];
   if(!t){
-    return '<section class="focus"><p class="kicker">Prochaine corvée</p><h2 class="ftitle">Ajoute ta première corvée.</h2><div class="btns"><button class="btn" data-act="pl.new">Ajouter</button></div></section>';
+    return '<section class="focus"><p class="kicker">Prochaine tâche</p><h2 class="ftitle">Ajoute ta première corvée.</h2><div class="btns"><button class="btn" data-act="pl.new">Ajouter</button></div></section>';
   }
   const running=U.timer&&U.timer.id===t.id;
-  const kick=bonus?'Bonus, si tu as de l’énergie':running?'En cours':'Prochaine corvée';
+  const kick=bonus?'Bonus, si tu as de l’énergie':running?'En cours':'Prochaine tâche';
   const m=Math.max(2,Math.min(t.min,10));
   const hint=t.min<=10?'Juste '+t.min+' minutes. Commence, le reste suivra.':'Commence par '+m+' minutes. Tu pourras t’arrêter ensuite.';
   let body='',btns='';
@@ -1064,7 +1093,7 @@ function plFocus(T,list){
     btns='<button class="btn" data-act="pl.start" data-id="'+t.id+'">Je m’y mets</button><button class="btn tint" data-act="pl.toggle" data-id="'+t.id+'">C’est fait</button>'+
       (!bonus&&list.length>1?'<button class="btn plain" data-act="pl.skip">Une autre</button>':'');
   }
-  return '<section class="focus" aria-label="Prochaine corvée"><p class="kicker">'+kick+'</p><h2 class="ftitle">'+esc(t.name)+'</h2>'+
+  return '<section class="focus" aria-label="Prochaine tâche"><p class="kicker">'+kick+'</p><h2 class="ftitle">'+esc(t.name)+'</h2>'+
     '<p class="fmeta">'+esc(plCat(t)[0])+' · '+fmtDur(t.min)+(bonus?' · prévue '+whenLabel(t.next,T):'')+'</p>'+body+'<div class="btns">'+btns+'</div></section>';
 }
 function plToday(T){
@@ -2354,20 +2383,23 @@ function render(){
   const a=document.activeElement,fid=a&&a.id&&app.contains(a)&&a.hasAttribute('data-keep')&&!(submitting&&submitting.contains(a))?a.id:null;
   Object.keys(CHARTS).forEach(k=>delete CHARTS[k]);
   if(CLOUD&&!Cloud.session){
-    document.body.classList.remove('glass');app.innerHTML=loginView();tb.innerHTML='';tb.hidden=true;paintTop();return;
+    setModClass('dash');app.innerHTML=loginView();tb.innerHTML='';tb.hidden=true;paintTop();return;
   }
   tb.hidden=false;
   const ft=footText();
   app.innerHTML=(DEMO?demoBanner():'')+m.render()+'<div class="foot" id="sync"'+(ft?'':' hidden')+' role="status">'+esc(ft)+'</div>';
   Object.keys(keep).forEach(id=>{const el=document.getElementById(id);if(el)el.value=keep[id];});
   if(fid){const el=document.getElementById(fid);if(el)el.focus({preventScroll:true});}
-  document.body.classList.toggle('glass',ui.mod==='dash'||(ui.mod==='fin'&&ui.fin.tab==='rec'));
+  setModClass(ui.mod);
   paintTop();
   app.querySelectorAll('.chips').forEach(c=>{const on=c.querySelector('[aria-pressed="true"]');if(on&&c.scrollWidth>c.clientWidth)c.scrollLeft=Math.max(0,on.getBoundingClientRect().left-c.getBoundingClientRect().left+c.scrollLeft-16);});
   tb.innerHTML='<div class="tabbar-in">'+Object.keys(MODS).map(k=>
     '<button class="tab" data-mod="'+k+'"'+(k===ui.mod?' aria-current="page"':'')+'>'+ic(k)+MODS[k].label+'</button>').join('')+'</div>';
 }
 const inApp=el=>el&&/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)&&appEl.contains(el);
+function setModClass(k){
+  const b=document.body;Object.keys(MODS).forEach(x=>b.classList.toggle('m-'+x,x===k));b.classList.add('glass');
+}
 function renderIdle(){if(inApp(document.activeElement)){idlePending=true;return;}render();}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(idlePending&&!inApp(document.activeElement))render();},0));
 function goMod(k){
