@@ -1,0 +1,30 @@
+{
+  "name": "Life Hub",
+  "short_name": "Life Hub",
+  "description": "Planner de corvées, finances et suivi de musculation au même endroit.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF0F3",
+  "theme_color": "#141B26",
+  "categories": ["productivity", "lifestyle", "health"],
+  "icons": [
+    {"src": "icons/icon-32.png", "sizes": "32x32", "type": "image/png"},
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "Planner", "url": "./#planner", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Finances", "url": "./#finances", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"}]},
+    {"name": "Musculation", "url": "./#musculation", "icons": [{"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"}]}
+  ],
+  "screenshots": [
+    {"src": "screenshots/planner.png", "sizes": "540x960", "type": "image/png", "form_factor": "narrow", "label": "Planner du jour"},
+    {"src": "screenshots/finances.png", "sizes": "540x960", "type": "image/png", "form_factor": "narrow", "label": "Charges et abonnements"},
+    {"src": "screenshots/muscu.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "Progression en musculation"}
+  ]
+}

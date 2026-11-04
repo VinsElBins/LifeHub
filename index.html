@@ -10,7 +10,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Life Hub">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,7 +62,7 @@ button{cursor:pointer}
 .eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink2)}
 h1{margin:0;font:800 clamp(30px,8vw,44px)/1.02 var(--f-display);font-stretch:118%;letter-spacing:-.01em;text-wrap:balance}
 .tabs{display:flex;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.tab{flex:1;min-width:0;border:0;background:transparent;padding:10px 4px;border-radius:10px;font-weight:600;font-size:14px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab{flex:1;min-width:0;border:0;background:transparent;padding:10px 2px;border-radius:10px;font-weight:600;font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .mods{position:fixed;left:0;right:0;bottom:0;z-index:10;
   padding:12px max(12px, env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px, env(safe-area-inset-left,0px));
@@ -150,6 +151,11 @@ h1{margin:0;font:800 clamp(30px,8vw,44px)/1.02 var(--f-display);font-stretch:118
 .form .inline input{width:84px}
 .form .chips{flex-wrap:wrap;overflow:visible}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row.is-editing{background:var(--accent-soft)}
+.diag{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.diag b{font:500 12px var(--f-mono);margin-right:6px}
+.diag .ko b{color:var(--late)}
+.diag .ok b{color:var(--ok)}
 .err{margin:0;color:var(--late);font-weight:600;min-height:1.2em}
 .note{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:12px 14px;border:1px dashed var(--line2);border-radius:14px;background:var(--accent-soft);font-size:14px}
 
@@ -756,22 +762,37 @@ function finRec(){
   const rowOf=it=>{
     const c=finCat(it),sure=ui.fin.confirmDel===it.id,step=(FREQ[it.freq]||FREQ.monthly)[1];
     const when='le '+it.day+(step>1?' '+MONTHS[(it.month||1)-1].toLowerCase():'');
-    return '<li class="row nochk"><div class="main"><span class="name">'+esc(it.name)+'</span><span class="meta"><span class="dot" style="background:'+c[1]+'"></span><span>'+esc(c[0])+' · '+esc(FREQ[it.freq][0].toLowerCase())+' · '+when+'</span></span></div>'+
+    return '<li class="row nochk'+(ui.fin.editId===it.id?' is-editing':'')+'"><div class="main"><span class="name">'+esc(it.name)+'</span><span class="meta"><span class="dot" style="background:'+c[1]+'"></span><span>'+esc(c[0])+' · '+esc(FREQ[it.freq][0].toLowerCase())+' · '+when+'</span></span></div>'+
       '<div class="side'+(sure?' confirming':'')+'"><span class="amt'+(it.kind==='in'?' pos':'')+'">'+money(it.amount)+'</span>'+(step>1?'<span class="when">≈ '+money(monthlyEq(it))+' / mois</span>':'')+
-      '<button class="mini'+(sure?' sure':'')+'" data-act="fin.delItem" data-id="'+it.id+'">'+(sure?'Confirmer':'Supprimer')+'</button></div></li>';
+      '<span style="display:flex;gap:12px"><button class="mini" data-act="fin.editItem" data-id="'+it.id+'" aria-label="Modifier '+esc(it.name)+'">Modifier</button>'+
+      '<button class="mini'+(sure?' sure':'')+'" data-act="fin.delItem" data-id="'+it.id+'">'+(sure?'Confirmer':'Supprimer')+'</button></span></div></li>';
   };
-  out+='<section class="sec"><h2>Revenus <em>'+ins.length+'</em></h2>'+(ins.length?'<ul class="list">'+ins.map(rowOf).join('')+'</ul>':'<div class="empty">Aucun revenu récurrent.</div>')+'</section>';
-  out+='<section class="sec"><h2>Charges et abonnements <em>'+outs.length+'</em></h2>'+(outs.length?'<ul class="list">'+outs.sort((a,b)=>a.day-b.day).map(rowOf).join('')+'</ul>':'<div class="empty">Aucune charge récurrente.</div>')+'</section>';
-  out+='<form class="form" data-form="fin.item" novalidate><div class="eyebrow">Ajouter une ligne récurrente</div>'+
-    '<div><label for="r-name">Nom</label><input id="r-name" name="name" maxlength="60" autocomplete="off" placeholder="Ex. Abonnement vidéo"></div>'+
-    '<div class="row2"><div><label for="r-kind">Type</label><select id="r-kind" name="kind"><option value="out">Charge ou abonnement</option><option value="in">Revenu</option></select></div>'+
-    '<div><label for="r-amt">Montant (€)</label><input id="r-amt" name="amount" type="number" min="0" step="0.01" inputmode="decimal"></div></div>'+
-    '<div class="row2"><div><label for="r-freq">Fréquence</label><select id="r-freq" name="freq">'+opts(FREQ)+'</select></div>'+
-    '<div><label for="r-day">Jour du mois</label><input id="r-day" name="day" type="number" min="1" max="31" inputmode="numeric" value="1"></div></div>'+
-    '<div class="row2"><div><label for="r-month">Mois (trimestriel, annuel)</label><select id="r-month" name="month">'+MONTHS.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('')+'</select></div>'+
-    '<div><label for="r-cat">Catégorie</label><select id="r-cat" name="cat">'+opts(FCATS,'abo')+'</select></div></div>'+
-    '<p class="err" role="alert"></p><button class="btn" type="submit">Ajouter</button></form>';
+  const SORTS=[['day','Jour'],['name','Nom'],['amount','Montant'],['cat','Catégorie']];
+  out+='<div class="chips" style="flex-wrap:wrap" role="group" aria-label="Trier par">'+SORTS.map(x=>{
+    const on=ui.fin.sort===x[0];
+    return '<button class="chip" data-act="fin.sort" data-v="'+x[0]+'" aria-pressed="'+on+'"'+(on?' aria-label="Trié par '+x[1].toLowerCase()+', '+(ui.fin.dir>0?'croissant':'décroissant')+'. Appuie pour inverser."':'')+'>'+x[1]+(on?(ui.fin.dir>0?' ↑':' ↓'):'')+'</button>';
+  }).join('')+'</div>';
+  out+='<section class="sec"><h2>Revenus <em>'+ins.length+'</em></h2>'+(ins.length?'<ul class="list">'+finSortList(ins).map(rowOf).join('')+'</ul>':'<div class="empty">Aucun revenu récurrent.</div>')+'</section>';
+  out+='<section class="sec"><h2>Charges et abonnements <em>'+outs.length+'</em></h2>'+(outs.length?'<ul class="list">'+finSortList(outs).map(rowOf).join('')+'</ul>':'<div class="empty">Aucune charge récurrente.</div>')+'</section>';
+  const ed=ui.fin.editId?its.find(i=>i.id===ui.fin.editId):null;
+  const v=ed||{name:'',kind:'out',amount:'',freq:'monthly',day:1,month:1,cat:'abo'};
+  out+='<form class="form" id="r-form" data-form="fin.item" novalidate><div class="eyebrow">'+(ed?'Modifier cette ligne':'Ajouter une ligne récurrente')+'</div><input type="hidden" name="id" value="'+(ed?esc(ed.id):'')+'">'+
+    '<div><label for="r-name">Nom</label><input id="r-name" name="name" maxlength="60" autocomplete="off" placeholder="Ex. Abonnement vidéo" value="'+esc(v.name)+'"></div>'+
+    '<div class="row2"><div><label for="r-kind">Type</label><select id="r-kind" name="kind"><option value="out"'+(v.kind==='out'?' selected':'')+'>Charge ou abonnement</option><option value="in"'+(v.kind==='in'?' selected':'')+'>Revenu</option></select></div>'+
+    '<div><label for="r-amt">Montant (€)</label><input id="r-amt" name="amount" type="number" min="0" step="0.01" inputmode="decimal" value="'+(v.amount===''?'':v.amount)+'"></div></div>'+
+    '<div class="row2"><div><label for="r-freq">Fréquence</label><select id="r-freq" name="freq">'+opts(FREQ,v.freq)+'</select></div>'+
+    '<div><label for="r-day">Jour du mois</label><input id="r-day" name="day" type="number" min="1" max="31" inputmode="numeric" value="'+v.day+'"></div></div>'+
+    '<div class="row2"><div><label for="r-month">Mois (trimestriel, annuel)</label><select id="r-month" name="month">'+MONTHS.map((m,i)=>'<option value="'+(i+1)+'"'+((v.month||1)===i+1?' selected':'')+'>'+m+'</option>').join('')+'</select></div>'+
+    '<div><label for="r-cat">Catégorie</label><select id="r-cat" name="cat">'+opts(FCATS,v.cat)+'</select></div></div>'+
+    '<p class="err" role="alert"></p><button class="btn" type="submit">'+(ed?'Enregistrer les modifications':'Ajouter')+'</button>'+
+    (ed?'<button type="button" class="btn alt" style="color:var(--ink)" data-act="fin.cancelEdit">Annuler</button>':'')+'</form>';
   return out;
+}
+function finSortList(l){
+  const k=ui.fin.sort,d=ui.fin.dir;
+  const byName=(a,b)=>a.name.localeCompare(b.name,'fr',{sensitivity:'base'});
+  const cmp={day:(a,b)=>a.day-b.day,name:byName,amount:(a,b)=>a.amount-b.amount,cat:(a,b)=>finCat(a)[0].localeCompare(finCat(b)[0],'fr')}[k]||byName;
+  return l.slice().sort((a,b)=>(cmp(a,b)*d)||byName(a,b));
 }
 function finTx(){
   const ym=ui.fin.month,T=today();
@@ -805,6 +826,18 @@ function finAct(a,b){
   else if(a==='day'){U.selDay=U.selDay===b.dataset.d?null:b.dataset.d;render();}
   else if(a==='pay'){const k=b.dataset.k;if(F.paid[k])delete F.paid[k];else F.paid[k]=true;finStore.save();render();}
   else if(a==='setup'){U.setup=!U.setup;render();}
+  else if(a==='sort'){
+    const k=b.dataset.v;
+    if(U.sort===k)U.dir=-U.dir;else{U.sort=k;U.dir=k==='amount'?-1:1;}
+    try{localStorage.setItem('lifehub.finsort',JSON.stringify({sort:U.sort,dir:U.dir}));}catch(e){}
+    render();
+  }
+  else if(a==='editItem'){
+    U.editId=b.dataset.id;render();
+    const f=document.getElementById('r-form');
+    if(f){f.scrollIntoView({behavior:'smooth',block:'center'});const n=document.getElementById('r-name');if(n)n.focus({preventScroll:true});}
+  }
+  else if(a==='cancelEdit'){U.editId=null;render();}
   else if(a==='clearEx'){
     const gone=F.items.filter(i=>i.ex).map(i=>i.id);
     F.items=F.items.filter(i=>!i.ex);F.tx=F.tx.filter(t=>!t.ex);
@@ -813,7 +846,7 @@ function finAct(a,b){
     finStore.save();render();toast('Exemples effacés');
   }
   else if(a==='delItem'){
-    if(U.confirmDel===b.dataset.id){F.items=F.items.filter(i=>i.id!==b.dataset.id);U.confirmDel=null;finStore.save();render();toast('Ligne supprimée');}
+    if(U.confirmDel===b.dataset.id){F.items=F.items.filter(i=>i.id!==b.dataset.id);if(U.editId===b.dataset.id)U.editId=null;U.confirmDel=null;finStore.save();render();toast('Ligne supprimée');}
     else{U.confirmDel=b.dataset.id;render();}
   }
   else if(a==='delTx'){
@@ -834,8 +867,10 @@ function finSubmit(f,form){
     if(!name){err.textContent='Donne un nom à cette ligne.';e.name.focus();return;}
     if(!(amount>0)){err.textContent='Saisis un montant supérieur à 0.';e.amount.focus();return;}
     if(!(day>=1&&day<=31)){err.textContent='Le jour doit être entre 1 et 31.';e.day.focus();return;}
-    F.items.push({id:uid('f'),name,kind:e.kind.value,amount:Math.round(amount*100)/100,freq:e.freq.value,day,month:parseInt(e.month.value,10),cat:e.kind.value==='in'?'autre':e.cat.value});
-    finStore.save();render();toast('Ligne ajoutée');
+    const fields={name,kind:e.kind.value,amount:Math.round(amount*100)/100,freq:e.freq.value,day,month:parseInt(e.month.value,10),cat:e.kind.value==='in'?'autre':e.cat.value};
+    const cur=e.id.value?F.items.find(i=>i.id===e.id.value):null;
+    if(cur){Object.assign(cur,fields);delete cur.ex;ui.fin.editId=null;finStore.save();render();toast('Ligne modifiée');}
+    else{F.items.push(Object.assign({id:uid('f')},fields));finStore.save();render();toast('Ligne ajoutée');}
   }else if(f==='tx'){
     const amount=num(e.amount.value),date=e.date.value;
     if(!(amount>0)){err.textContent='Saisis un montant supérieur à 0.';e.amount.focus();return;}
@@ -1189,9 +1224,10 @@ const MODS={
 const ui={
   mod:'pl',data:false,auth:{mode:'in',msg:''},confirmLogout:false,
   pl:{tab:'today',filter:'all',skip:0,timer:null,confirmDel:null},
-  fin:{tab:'budget',month:ymOf(today()),selDay:null,confirmDel:null,setup:false},
+  fin:{tab:'budget',month:ymOf(today()),selDay:null,confirmDel:null,setup:false,editId:null,sort:'day',dir:1},
   mus:{tab:'seance',exSel:null,metric:'charge',month:ymOf(today()),confirmDel:null,manage:false,wp:'90'}
 };
+try{const sp=JSON.parse(localStorage.getItem('lifehub.finsort')||'null');if(sp&&['day','name','amount','cat'].indexOf(sp.sort)>=0){ui.fin.sort=sp.sort;ui.fin.dir=sp.dir<0?-1:1;}}catch(e){}
 function subTabs(mod,tabs,cur){
   return '<nav class="tabs" aria-label="Vues">'+tabs.map(t=>'<button class="tab" data-act="'+mod+'.tab" data-tab="'+t[0]+'" aria-pressed="'+(cur===t[0])+'">'+t[1]+'</button>').join('')+'</nav>';
 }
@@ -1202,6 +1238,7 @@ function render(){
   }
   app.innerHTML=m.render()+(ui.data?dataPanel():'')+'<div class="foot" id="sync">'+syncText(m.store)+'</div>'+
     '<button class="mini" style="align-self:center" data-act="app.data">'+(ui.data?'Fermer':'Sauvegarde et données')+'</button>';
+  if(ui.data&&typeof fillDiag==='function')fillDiag();
   document.getElementById('mods').innerHTML='<div class="mods-in">'+Object.keys(MODS).map(k=>
     '<button class="mod" data-mod="'+k+'"'+(k===ui.mod?' aria-current="page"':'')+'><svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[k]+'</svg>'+MODS[k].label+'</button>').join('')+'</div>';
 }
@@ -1407,8 +1444,38 @@ function dataPanel(){
     '<button class="btn" data-act="app.export">Exporter une sauvegarde</button>'+
     '<div><label for="imp">Importer une sauvegarde</label><input id="imp" type="file" accept="application/json,.json" data-f="app.import"><p class="hint" style="margin:6px 0 0">L’import remplace les données actuelles de cet appareil.</p></div>'+
     '<p class="err" id="app-msg" role="status" style="color:var(--ink)"></p>'+
+    '<div class="eyebrow" style="margin-top:4px">Installation de l’application</div><ul class="diag" id="diag"><li>Vérification…</li></ul>'+
     (deferredInstall&&!standalone?'<button class="btn alt" style="color:var(--ink)" data-act="app.install">Installer l’application</button>':'')+
     '</div></section>';
+}
+async function fillDiag(){
+  const el=document.getElementById('diag');if(!el)return;
+  const L=[];
+  const add=(ok,t)=>L.push('<li class="'+(ok?'ok':'ko')+'"><b>'+(ok?'OK':'À VÉRIFIER')+'</b>'+t+'</li>');
+  const secure=window.isSecureContext;
+  add(secure,secure?'Page servie en HTTPS':'La page n’est pas en HTTPS : l’installation est impossible');
+  try{
+    const href=document.querySelector('link[rel=manifest]');
+    if(!href)throw new Error('lien absent');
+    const r=await fetch(href.href,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json();
+    const sizes=(j.icons||[]).map(i=>i.sizes).join(' ');
+    const good=j.name&&j.start_url&&j.display&&/192x192/.test(sizes)&&/512x512/.test(sizes);
+    add(!!good,good?'Manifeste valide (« '+esc(j.name)+' », icônes 192 et 512 px)':'Manifeste incomplet : nom, start_url, display ou icônes 192/512 manquants');
+  }catch(e){add(false,'Manifeste introuvable ou illisible ('+esc(e.message)+')');}
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    const st=reg&&(reg.active?'actif':reg.installing?'en cours d’installation':reg.waiting?'en attente':'');
+    add(!!(reg&&reg.active),reg&&reg.active?'Service worker actif (mode hors ligne prêt)':st?'Service worker '+st+' : recharge la page':'Service worker absent : le fichier sw.js n’est pas servi');
+  }catch(e){add(false,'Service worker indisponible dans ce navigateur');}
+  const standalone=window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches;
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(standalone)add(true,'Tu utilises déjà l’application installée');
+  else if(deferredInstall)add(true,'Chrome propose l’installation : utilise le bouton ci-dessous');
+  else if(ios)add(false,'Sur iPhone : Partager, puis « Sur l’écran d’accueil » dans Safari');
+  else add(false,'Chrome n’a pas proposé l’installation : ouvre le menu ⋮ puis « Installer l’application ». Si seul « Ajouter à l’écran d’accueil » apparaît, ou si l’appli est déjà installée, voir les points ci-dessus');
+  el.innerHTML=L.join('');
 }
 function exportData(){
   const out={app:'life-hub',version:1,exported:new Date().toISOString(),data:{}};
