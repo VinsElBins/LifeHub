@@ -1167,8 +1167,7 @@ function plCourses(){
     if(got.length)out+='<section class="sec"><h2 class="sh">Dans le panier <em>'+got.length+'</em></h2><ul class="list">'+got.map(row).join('')+'</ul></section>';
   }
   out+='<div class="btns">'+(got.length?'<button class="btn gray" data-act="pl.coClear">Vider le panier ('+got.length+')</button>':'')+
-    '<button class="btn" data-act="pl.coPay">J’ai fait les courses</button></div>'+
-    '<p class="hint">« J’ai fait les courses » enregistre le montant payé dans Finances › Dépenses, catégorie Courses.</p>';
+    '<button class="btn" data-act="pl.coPay">J’ai fait les courses</button></div>';
   return out;
 }
 SHEETS['co.pay']=()=>{
