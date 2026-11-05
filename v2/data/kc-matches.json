@@ -1,0 +1,24 @@
+{
+ "team": {
+  "id": 134078,
+  "name": "Karmine Corp",
+  "acronym": "KC"
+ },
+ "generatedAt": "2026-11-03T00:00:00.000Z",
+ "matches": [
+  {
+   "id": 1711016,
+   "status": "not_started",
+   "at": "2026-11-06T22:00:00Z",
+   "opp": {
+    "name": "T1",
+    "acronym": "T1"
+   },
+   "bo": 5,
+   "league": "Worlds",
+   "serie": "2026",
+   "stage": "Playoffs",
+   "round": "Quarterfinal 2"
+  }
+ ]
+}

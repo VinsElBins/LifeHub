@@ -1,0 +1,42 @@
+name: Matchs Karmine Corp
+
+# Toutes les 2 heures : récupère les matchs de Karmine Corp (LEC, First Stand, MSI, Worlds…) sur PandaScore
+# et met à jour v2/data/kc-matches.json, que l'app lit pour corriger l'agenda.
+on:
+  schedule:
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/fetch-kc-matches.mjs'
+      - '.github/workflows/kc-matches.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kc-matches
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Récupérer les matchs
+        run: node scripts/fetch-kc-matches.mjs
+      - name: Enregistrer s'il y a du nouveau
+        run: |
+          if [ -n "$(git status --porcelain v2/data)" ]; then
+            git config user.name "kc-matches-bot"
+            git config user.email "kc-matches-bot@users.noreply.github.com"
+            git add v2/data/kc-matches.json
+            git commit -m "Matchs Karmine Corp : mise à jour automatique"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          else
+            echo "Rien à enregistrer."
+          fi
