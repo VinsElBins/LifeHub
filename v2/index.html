@@ -43,8 +43,8 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
   --sep:rgba(60,60,67,.2); --sep2:#C6C6C8;
   --accent:#0B7A75; --accent-fg:#0B7A75; --accent-soft:rgba(11,122,117,.12); --on-accent:#FFFFFF;
   --red:#D70015; --red-fg:#D70015; --red-soft:rgba(215,0,21,.1); --green-fg:#1E7B34;
-  --s-base:rgba(255,255,255,.64); --s-a:.12; --s-b:.04;
-  --au:.32; --g-base:rgba(255,255,255,.46); --g-a:.26; --g-b:.10; --g-border:rgba(255,255,255,.62); --g-hl:rgba(255,255,255,.8);
+  --s-base:rgba(255,255,255,.30); --s-a:.10; --s-b:.03;
+  --au:.36; --g-base:rgba(255,255,255,.18); --g-a:.22; --g-b:.06; --g-border:rgba(255,255,255,.62); --g-hl:rgba(255,255,255,.8);
   --bar:rgba(249,249,249,.86); --scrim:rgba(0,0,0,.32); --hud:rgba(30,30,32,.94); --on-hud:#FFFFFF;
   --c1:#FF9500; --c2:#007AFF; --c3:#AF52DE; --c4:#34C759; --c5:#FF2D55; --c6:#8E8E93; --c7:#A2845E; --c8:#5856D6;
   --f:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -60,8 +60,8 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
     --sep:rgba(84,84,88,.65); --sep2:#38383A;
     --accent:#0B7A75; --accent-fg:#3FCBC1; --accent-soft:rgba(63,203,193,.16);
     --red-fg:#FF6961; --red-soft:rgba(255,105,97,.16); --green-fg:#30D158;
-    --s-base:rgba(28,28,30,.56); --s-a:.22; --s-b:.08;
-  --au:.46; --g-base:rgba(28,28,30,.44); --g-a:.46; --g-b:.20; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
+    --s-base:rgba(28,28,30,.26); --s-a:.18; --s-b:.06;
+  --au:.5; --g-base:rgba(28,28,30,.16); --g-a:.34; --g-b:.12; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
   --bar:rgba(22,22,24,.86); --scrim:rgba(0,0,0,.5); --hud:rgba(58,58,60,.96);
     --c1:#FF9F0A; --c2:#0A84FF; --c3:#BF5AF2; --c4:#30D158; --c5:#FF375F; --c6:#98989D; --c7:#AC8E68; --c8:#5E5CE6;
     color-scheme:dark;
@@ -74,8 +74,8 @@ try{applyTheme(localStorage.getItem('lifehub2.theme'));}catch(e){}
   --sep:rgba(84,84,88,.65); --sep2:#38383A;
   --accent:#0B7A75; --accent-fg:#3FCBC1; --accent-soft:rgba(63,203,193,.16);
   --red-fg:#FF6961; --red-soft:rgba(255,105,97,.16); --green-fg:#30D158;
-  --s-base:rgba(28,28,30,.56); --s-a:.22; --s-b:.08;
-  --au:.46; --g-base:rgba(28,28,30,.44); --g-a:.46; --g-b:.20; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
+  --s-base:rgba(28,28,30,.26); --s-a:.18; --s-b:.06;
+  --au:.5; --g-base:rgba(28,28,30,.16); --g-a:.34; --g-b:.12; --g-border:rgba(255,255,255,.14); --g-hl:rgba(255,255,255,.14);
   --bar:rgba(22,22,24,.86); --scrim:rgba(0,0,0,.5); --hud:rgba(58,58,60,.96);
   --c1:#FF9F0A; --c2:#0A84FF; --c3:#BF5AF2; --c4:#30D158; --c5:#FF375F; --c6:#98989D; --c7:#AC8E68; --c8:#5E5CE6;
   color-scheme:dark;
@@ -791,6 +791,12 @@ function demoSeed(name,full){
   const T=today(),A=n=>addDays(T,n),d=parseInt(T.slice(8),10),ym=ymOf(T),m=parseInt(ym.slice(5),10);
   const pd=Math.max(1,d-4),fd=Math.min(28,d+3),day=n=>ym+'-'+pad(Math.max(1,Math.min(n,d)));
   if(name==='cfg')return {v:1,ninjas:''};
+  if(name==='co'){
+    if(!full)return {v:1,items:[]};
+    const k=(id,nm,done)=>({id,name:nm,done:!!done,at:0});
+    return {v:1,items:[k('k1','Lait demi-écrémé'),k('k2','Pâtes complètes'),k('k3','Tomates',1),k('k4','Lessive'),k('k5','Pain de mie',1),
+      k('k6','Papier toilette (le gros paquet de 12 rouleaux, celui en promo)'),k('k7','Œufs'),k('k8','Café moulu',1)]};
+  }
   if(name==='pl'){
     const off=PL_EXTRA.map(x=>x[0]);
     if(!full)return {v:1,tasks:[],log:{},offered:off};
@@ -1139,12 +1145,94 @@ SHEETS['pl.form']=d=>{
       (ed?'<p class="gf">Prochaine fois : '+esc(whenLabel(ed.next,today()))+'. La date suivante se recalcule quand tu marques la corvée comme faite.</p>':'')+
       '<p class="err" role="alert"></p></form>'};
 };
+/* ---------- Liste de courses (vue « Courses » du Planner) ---------- */
+function coNorm(d){
+  try{d=JSON.parse(JSON.stringify(d));if(!d||!Array.isArray(d.items))return null;d.v=1;
+    d.items=d.items.filter(i=>i&&typeof i.name==='string'&&i.name.trim()).map(i=>({id:String(i.id||uid('k')),name:i.name.trim().slice(0,80),done:!!i.done,at:+i.at||0}));return d;}
+  catch(e){return null;}
+}
+const coStore=makeStore('co','lifehub.co.v1','courses/state',()=>({v:1,items:[]}),coNorm);
+const CO=()=>coStore.state;
+const coById=id=>CO().items.find(i=>i.id===id)||null;
+function plCourses(){
+  const L=CO().items,todo=L.filter(i=>!i.done),got=L.filter(i=>i.done);
+  const row=i=>'<li class="row lead tap'+(i.done?' is-done':'')+'" data-act="pl.coRow" data-id="'+i.id+'">'+
+    '<button class="check" data-act="pl.coToggle" data-id="'+i.id+'" aria-pressed="'+i.done+'" aria-label="'+(i.done?'Remettre sur la liste : ':'Mettre dans le panier : ')+esc(i.name)+'">'+CHECK+'</button>'+
+    '<div class="main"><span class="name">'+esc(i.name)+'</span></div>'+
+    '<button class="more" data-act="pl.coRow" data-id="'+i.id+'" aria-label="Actions pour '+esc(i.name)+'">'+ic('more')+'</button></li>';
+  let out='<form class="quick" data-form="pl.coadd" novalidate><input id="co-add" name="name" maxlength="80" autocomplete="off" enterkeyhint="done" placeholder="Ajouter un article" aria-label="Ajouter un article" data-keep><button class="btn" type="submit">Ajouter</button></form>';
+  if(!L.length)out+='<div class="empty">Ta liste de courses est vide. Ajoute ce qu’il te manque au fil de la semaine.</div>';
+  else{
+    out+='<section class="sec"><h2 class="sh">À acheter <em>'+todo.length+'</em></h2>'+(todo.length?'<ul class="list">'+todo.map(row).join('')+'</ul>':'<div class="empty">Tout est dans le panier.</div>')+'</section>';
+    if(got.length)out+='<section class="sec"><h2 class="sh">Dans le panier <em>'+got.length+'</em></h2><ul class="list">'+got.map(row).join('')+'</ul></section>';
+  }
+  out+='<div class="btns">'+(got.length?'<button class="btn gray" data-act="pl.coClear">Vider le panier ('+got.length+')</button>':'')+
+    '<button class="btn" data-act="pl.coPay">J’ai fait les courses</button></div>'+
+    '<p class="hint">« J’ai fait les courses » enregistre le montant payé dans Finances › Dépenses, catégorie Courses.</p>';
+  return out;
+}
+SHEETS['co.pay']=()=>{
+  const T=today(),n=CO().items.filter(i=>i.done).length;
+  return {title:'Enregistrer la dépense',focus:'cp-amt',right:'<button class="nb b" type="submit" form="cp-form">Enregistrer</button>',
+    body:'<form class="form" id="cp-form" data-form="pl.copay" novalidate><div class="fg">'+
+      fr('cp-amt','Montant payé','<div class="unit">'+numIn('cp-amt','amount','','0,00',true,' enterkeyhint="done"')+'<span>€</span></div>')+
+      fr('cp-date','Date','<input id="cp-date" name="date" type="date" value="'+T+'">')+
+      fr('cp-name','Libellé','<input id="cp-name" name="name" maxlength="60" autocomplete="off" value="Courses">')+'</div>'+
+      '<p class="gf">La dépense est ajoutée dans Finances › Dépenses, catégorie Courses.'+(n?' Pense ensuite à vider le panier ('+n+' article'+(n>1?'s':'')+').':'')+'</p>'+
+      '<p class="err" role="alert"></p></form>'};
+};
+SHEETS['co.edit']=d=>{
+  const it=coById(d.id)||{name:''};
+  return {title:'Modifier l’article',right:'<button class="nb b" type="submit" form="ce-form">OK</button>',
+    body:'<form class="form" id="ce-form" data-form="pl.coedit" novalidate><input type="hidden" name="id" value="'+esc(d.id||'')+'"><div class="fg">'+
+      fr('ce-name','Article','<input id="ce-name" name="name" maxlength="80" autocomplete="off" enterkeyhint="done" value="'+esc(it.name)+'">')+'</div><p class="err" role="alert"></p></form>'};
+};
+function coAct(a,b){
+  const id=b.dataset.id,L=CO().items;
+  if(a==='coToggle'){const it=coById(id);if(!it)return;it.done=!it.done;if(it.done)buzz(8);coStore.save();render();}
+  else if(a==='coRow'){
+    const it=coById(id);if(!it)return;
+    openAS(it.name,it.done?'Dans le panier':'À acheter',[
+      {label:'Modifier',fn:()=>openSheet('co.edit',{id})},
+      {label:'Supprimer l’article',danger:true,fn:()=>{const i=L.indexOf(it);if(i<0)return;L.splice(i,1);coStore.save();render();
+        toast('Article supprimé',()=>{CO().items.splice(Math.min(i,CO().items.length),0,it);coStore.save();render();});}}
+    ]);
+  }
+  else if(a==='coClear'){
+    const before=L.slice(),n=L.filter(i=>i.done).length;if(!n)return;
+    CO().items=L.filter(i=>!i.done);coStore.save();render();
+    toast(n+' article'+(n>1?'s':'')+' retiré'+(n>1?'s':'')+' du panier',()=>{CO().items=before;coStore.save();render();});
+  }
+  else if(a==='coPay'){openSheet('co.pay',{});}
+  else if(a==='coFocus'){const el=document.getElementById('co-add');if(el){el.scrollIntoView({block:'center'});el.focus();}}
+}
+function coSubmit(f,form){
+  const e=form.elements;
+  if(f==='coadd'){
+    const name=e.name.value.trim();if(!name)return;
+    if(CO().items.some(i=>!i.done&&i.name.toLowerCase()===name.toLowerCase())){toast('« '+name+' » est déjà sur la liste');return;}
+    CO().items.push({id:uid('k'),name:name.slice(0,80),done:false,at:Date.now()});coStore.save();render();
+    const q=document.getElementById('co-add');if(q)q.focus({preventScroll:true});
+  }else if(f==='coedit'){
+    const name=e.name.value.trim();if(!name){ferr(e.name,'Donne un nom à l’article.');return;}
+    const it=coById(e.id.value);if(it){it.name=name.slice(0,80);coStore.save();}
+    closeSheet(true);toast('Article modifié');
+  }else if(f==='copay'){
+    const amount=num(e.amount.value),date=e.date.value;
+    if(!(amount>0)){ferr(e.amount,'Saisis le montant payé.');return;}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ferr(e.date,'Choisis une date.');return;}
+    const tx={id:uid('t'),date,name:e.name.value.trim()||'Courses',amount:Math.round(amount*100)/100,cat:'courses'};
+    FS().tx.push(tx);finStore.save();closeSheet(true);
+    toast('Dépense de '+money(tx.amount)+' enregistrée',()=>{const i=FS().tx.indexOf(tx);if(i>=0){FS().tx.splice(i,1);finStore.save();render();}});
+  }
+}
 function plRender(){
   const T=today();
-  const tabs=[['today','Aujourd’hui'],['all','Toutes']];
+  const tabs=[['today','Aujourd’hui'],['all','Toutes'],['courses','Courses']];
   if(ui.pl.tab==='add')ui.pl.tab='today';
-  return pageHead('Planner',cap(fLong.format(parse(T))),'',addBtn('pl.new','Ajouter une corvée'))+
-    subTabs('pl',tabs,ui.pl.tab)+(ui.pl.tab==='today'?plToday(T):plAll(T));
+  const co=ui.pl.tab==='courses';
+  return pageHead('Planner',cap(fLong.format(parse(T))),'',co?addBtn('pl.coFocus','Ajouter un article'):addBtn('pl.new','Ajouter une corvée'))+
+    subTabs('pl',tabs,ui.pl.tab)+(ui.pl.tab==='today'?plToday(T):co?plCourses():plAll(T));
 }
 function plSyncChips(){
   const inp=document.getElementById('f-every');if(!inp)return;
@@ -1164,6 +1252,7 @@ function plTimer(t){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ui.pl.timer&&!wakeLock)plTimer(ui.pl.timer);});
 function plAct(a,b){
   const U=ui.pl,id=b.dataset.id;
+  if(a.indexOf('co')===0&&a!=='coFocus'||a==='coFocus'){coAct(a,b);return;}
   if(a==='tab'){U.tab=b.dataset.tab;render();}
   else if(a==='filter'){U.filter=b.dataset.v;render();}
   else if(a==='toggle'){const t=plById(id);if(t){if(t.last===today())plUndo(id);else{buzz(10);plDone(id);}}}
@@ -1186,6 +1275,7 @@ function plAct(a,b){
 }
 function plField(f){if(f==='every')plSyncChips();}
 function plSubmit(f,form){
+  if(f.indexOf('co')===0){coSubmit(f,form);return;}
   const e=form.elements;
   const name=e.name.value.trim(),every=parseInt(e.every.value,10),min=parseInt(e.min.value,10);
   if(!name){ferr(e.name,'Donne un nom à la tâche.');return;}
@@ -2259,6 +2349,8 @@ function dashPlanner(T){
   if(n)b+='<ul class="dt-list">'+list.slice(0,3).map(t=>'<li><span class="k">'+fmtDur(t.min)+'</span><span>'+esc(t.name)+'</span></li>').join('')+(n>3?'<li><span class="k"></span><span>et '+(n-3)+' autre'+(n-3>1?'s':'')+'</span></li>':'')+'</ul>';
   else{const nx=plNextUp(T);if(nx)b+=TT('Prochaine : '+esc(nx.name)+' ('+whenLabel(nx.next,T)+')');}
   if(st>0)b+=TT(st+' jour'+(st>1?'s':'')+' d’affilée');
+  const nc=CO().items.filter(i=>!i.done).length;
+  if(nc)b+=TT('Courses : '+nc+' article'+(nc>1?'s':'')+' à acheter');
   return dashTile('pl','Planner',b,late?'today':'');
 }
 function dashAgenda(T){
