@@ -1,8 +1,8 @@
 /* Life Hub : service worker. Change VERSION à chaque mise à jour des fichiers pour renouveler le cache. */
-const VERSION='life-hub-v5';
+const VERSION='life-hub-v9';
 const CORE=['./','index.html','manifest.json','config.js','icons/icon-32.png','icons/icon-192.png','icons/icon-512.png','icons/icon-512-maskable.png','icons/apple-touch-icon.png'];
 
-/* Installation : mise en cache des fichiers de base. Un fichier manquant n'empêche pas l'installation du service worker. */
+/* Installation : mise en cache des fichiers de base. Un fichier manquant n'empêche pas l'installation. */
 self.addEventListener('install',e=>{
   e.waitUntil(
     caches.open(VERSION)
@@ -11,7 +11,7 @@ self.addEventListener('install',e=>{
   );
 });
 
-/* Activation : suppression des anciens caches. */
+/* Activation : suppression de tous les anciens caches (anciennes versions comprises). */
 self.addEventListener('activate',e=>{
   e.waitUntil(
     caches.keys()
@@ -20,7 +20,7 @@ self.addEventListener('activate',e=>{
   );
 });
 
-/* Requêtes : pages = réseau d'abord (copie en cache si hors ligne), le reste = cache d'abord puis mise à jour en arrière-plan.
+/* Requêtes : pages = réseau d'abord (copie en cache pour le hors ligne), le reste = cache d'abord puis mise à jour.
    Les appels à la base de données (autre domaine) ne passent jamais par le cache. */
 self.addEventListener('fetch',e=>{
   const req=e.request;
@@ -32,8 +32,13 @@ self.addEventListener('fetch',e=>{
   if(req.mode==='navigate'){
     e.respondWith(
       fetch(req).then(r=>{const cp=r.clone();caches.open(VERSION).then(c=>c.put('index.html',cp));return r;})
-        .catch(()=>caches.match('index.html').then(r=>r||caches.match('./')))
+        .catch(()=>caches.open(VERSION).then(c=>c.match('index.html').then(r=>r||c.match('./'))))
     );
+    return;
+  }
+  /* Liste des matchs de Karmine Corp : toujours le réseau d'abord, pour ne pas lire une liste périmée. */
+  if(url.pathname.indexOf('/data/')>=0){
+    e.respondWith(fetch(req).then(r=>{if(r.ok){const cp=r.clone();caches.open(VERSION).then(c=>c.put(req,cp));}return r;}).catch(()=>caches.open(VERSION).then(c=>c.match(req))));
     return;
   }
   e.respondWith(caches.open(VERSION).then(c=>c.match(req).then(hit=>{

@@ -1,4 +1,4 @@
-// Récupère les matchs de Karmine Corp (équipe LEC) sur PandaScore et les écrit dans v2/data/kc-matches.json.
+// Récupère les matchs de Karmine Corp (équipe LEC) sur PandaScore et les écrit dans data/kc-matches.json.
 // Lancé toutes les 2 heures par .github/workflows/kc-matches.yml (le navigateur ne peut pas appeler PandaScore
 // directement : l'API n'envoie pas d'en-têtes CORS). L'app lit seulement le fichier produit.
 //
@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 
 const TOKEN = 'YwTQFx1B3aSqlYGTwL3LPqvnDZiL21naih6NnpqOVTEhoN4hKlw';
 const TEAM_ID = 134078; // « Karmine Corp » (KC), équipe LEC : LEC, First Stand, MSI, Worlds, Esports World Cup
-const OUT = 'v2/data/kc-matches.json';
+const OUT = 'data/kc-matches.json';
 const DAY = 864e5;
 
 async function get(page) {
@@ -60,7 +60,7 @@ const age = prev && prev.generatedAt ? Date.now() - Date.parse(prev.generatedAt)
 if (same && age < 20 * 3600e3) {
   console.log('Aucun changement (' + matches.length + ' matchs).');
 } else {
-  mkdirSync('v2/data', { recursive: true });
+  mkdirSync('data', { recursive: true });
   writeFileSync(OUT, JSON.stringify({ team: { id: TEAM_ID, name: 'Karmine Corp', acronym: 'KC' }, generatedAt: new Date().toISOString(), matches }, null, 1) + '\n');
   console.log((same ? 'Preuve de vie : ' : 'Mis à jour : ') + matches.length + ' matchs.');
 }
