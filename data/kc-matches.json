@@ -4,12 +4,12 @@
   "name": "Karmine Corp",
   "acronym": "KC"
  },
- "generatedAt": "2026-11-06T21:29:19.639Z",
+ "generatedAt": "2026-11-07T01:55:52.068Z",
  "matches": [
   {
    "id": 1711016,
-   "status": "not_started",
-   "at": "2026-11-06T22:00:00Z",
+   "status": "finished",
+   "at": "2026-11-06T22:05:00Z",
    "opp": {
     "name": "T1",
     "acronym": "T1"
