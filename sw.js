@@ -1,5 +1,5 @@
 /* Life Hub : service worker. Change VERSION à chaque mise à jour des fichiers pour renouveler le cache. */
-const VERSION='life-hub-v10';
+const VERSION='life-hub-v11';
 const CORE=['./','index.html','manifest.json','config.js','icons/icon-32.png','icons/icon-192.png','icons/icon-512.png','icons/icon-512-maskable.png','icons/apple-touch-icon.png'];
 
 /* Installation : mise en cache des fichiers de base. Un fichier manquant n'empêche pas l'installation. */

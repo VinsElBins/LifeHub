@@ -1190,7 +1190,7 @@ SHEETS['co.pay']=()=>{
       fr('cp-amt','Montant payé','<div class="unit">'+numIn('cp-amt','amount','','0,00',true,' enterkeyhint="done"')+'<span>€</span></div>')+
       fr('cp-date','Date','<input id="cp-date" name="date" type="date" value="'+T+'">')+
       fr('cp-name','Libellé','<input id="cp-name" name="name" maxlength="60" autocomplete="off" value="Courses">')+'</div>'+
-      '<p class="gf">La dépense est ajoutée dans Finances › Dépenses, catégorie Courses.'+(n?' Pense ensuite à vider le panier ('+n+' article'+(n>1?'s':'')+').':'')+'</p>'+
+      '<p class="gf">La dépense est ajoutée dans Finances › Dépenses, catégorie Courses.'+(n?' Les '+n+' article'+(n>1?'s':'')+' du panier seront retiré'+(n>1?'s':'')+' de la liste.':'')+'</p>'+
       '<p class="err" role="alert"></p></form>'};
 };
 SHEETS['co.edit']=d=>{
@@ -1234,8 +1234,15 @@ function coSubmit(f,form){
     if(!(amount>0)){ferr(e.amount,'Saisis le montant payé.');return;}
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ferr(e.date,'Choisis une date.');return;}
     const tx={id:uid('t'),date,name:e.name.value.trim()||'Courses',amount:Math.round(amount*100)/100,cat:'courses'};
-    FS().tx.push(tx);finStore.save();closeSheet(true);
-    toast('Dépense de '+money(tx.amount)+' enregistrée',()=>{const i=FS().tx.indexOf(tx);if(i>=0){FS().tx.splice(i,1);finStore.save();render();}});
+    FS().tx.push(tx);finStore.save();
+    /* Les articles du panier sont retirés avec la dépense ; « Annuler » remet les deux */
+    const before=CO().items.slice(),n=before.filter(i=>i.done).length;
+    if(n){CO().items=before.filter(i=>!i.done);coStore.save();}
+    closeSheet(true);
+    toast('Dépense de '+money(tx.amount)+' enregistrée'+(n?' · panier vidé':''),()=>{
+      const i=FS().tx.indexOf(tx);if(i>=0){FS().tx.splice(i,1);finStore.save();}
+      if(n){CO().items=before;coStore.save();}
+      render();});
   }
 }
 function plRender(){
