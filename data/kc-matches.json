@@ -4,6 +4,35 @@
   "name": "Karmine Corp",
   "acronym": "KC"
  },
- "generatedAt": "2026-11-12T00:43:47.798Z",
- "matches": []
+ "generatedAt": "2026-11-12T18:19:32.454Z",
+ "matches": [
+  {
+   "id": 1808144,
+   "status": "not_started",
+   "at": "2026-12-05T13:00:00Z",
+   "opp": {
+    "name": "Movistar KOI",
+    "acronym": "MKOI"
+   },
+   "bo": 1,
+   "league": "Red Bull League of Its Own",
+   "serie": "2026",
+   "stage": "Group Stage",
+   "round": ""
+  },
+  {
+   "id": 1808147,
+   "status": "not_started",
+   "at": "2026-12-05T16:00:00Z",
+   "opp": {
+    "name": "T1",
+    "acronym": "T1"
+   },
+   "bo": 1,
+   "league": "Red Bull League of Its Own",
+   "serie": "2026",
+   "stage": "Group Stage",
+   "round": ""
+  }
+ ]
 }
